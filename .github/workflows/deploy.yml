@@ -1,4 +1,4 @@
-name: Build
+name: Deploy Backend CI/CD
 
 on:
   workflow_dispatch:
@@ -23,11 +23,34 @@ jobs:
       - name: 依存関係のインストール
         run: npm install
 
-      - name: Docusaurus のビルド
+      - name: skinview3dのビルド
         run: npm run build
 
       - name: ビルド成果物の保存（オプション）
         uses: actions/upload-artifact@v4
         with:
           name: skinview3d-embed
-          path: build  # `build` ディレクトリを保存
+          path: examples/dist  # `examples/dist` ディレクトリを保存
+  
+  deploy-backend:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ダウンロードビルド成果物
+        uses: actions/download-artifact@v4
+        with:
+          name: skinview3d-embed
+          path: examples/dist
+
+      - name: バックエンドサーバーへアップロード
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: "./examples/dist/"
+          server-dir: "/public_html/api.enabify.net/mcanalytics/canvas/"
